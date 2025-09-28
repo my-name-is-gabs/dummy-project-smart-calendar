@@ -1,6 +1,5 @@
 <template>
   <div>
-    <h1 class="text-danger">This is the APP</h1>
     <smart-calendar></smart-calendar>
   </div>
 </template>
