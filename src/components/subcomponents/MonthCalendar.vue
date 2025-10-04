@@ -22,7 +22,7 @@
           class="p-2"
           :class="{
             'text-body-tertiary': day.isOtherMonth,
-            'fw-bold text-primary fs-5': isDayToday(day.date),
+            'fw-bold text-primary': isDayToday(day.date),
           }"
         >
           {{ formatDay(day.date) }}
