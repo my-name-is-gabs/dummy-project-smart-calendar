@@ -11,6 +11,8 @@
         </div>
         <div class="p-1 fs-4">{{ currentDate }}</div>
       </div>
+
+      <!-- Make this dynamic -->
       <select class="justify-self-end" name="calendarType" id="calendarType">
         <option value="day">Day</option>
         <option value="week">Week</option>

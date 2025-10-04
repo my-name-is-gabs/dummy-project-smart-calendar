@@ -14,27 +14,44 @@
     <!-- Days & events -->
     <div class="calendarGrid">
       <div
-        class="day-cell border border-secondary-subtle ps-2"
+        class="day-cell border border-secondary-subtle position-relative"
         v-for="(day, i) in daysInCalendar"
         :key="i"
       >
-        {{ formatDay(day.date) }}
+        <div
+          class="p-2"
+          :class="{
+            'text-body-tertiary': day.isOtherMonth,
+            'fw-bold text-primary fs-5': isDayToday(day.date),
+          }"
+        >
+          {{ formatDay(day.date) }}
+        </div>
+
+        <!-- Events -->
+        <div class="flex-grow-1 overflow-auto">
+          <div class="event-pill mb-1">
+            <small class="badge bg-primary text-dark w-100 text-start text-white"> test </small>
+            <small class="badge bg-primary text-dark w-100 text-start text-white"> test </small>
+          </div>
+        </div>
       </div>
     </div>
   </main>
 </template>
 
 <script>
-import { format } from 'date-fns'
+import { generateCalendarDays } from '@/services/calendarService'
+import { format, isSameDay } from 'date-fns'
 
 export default {
   name: 'MonthCalendar',
   props: {
-    daysInCalendar: {
-      type: Array,
+    currentDate: {
+      type: Date,
       required: true,
       default() {
-        return ['1']
+        return new Date()
       },
     },
   },
@@ -43,9 +60,22 @@ export default {
       weeks: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
     }
   },
+  computed: {
+    /**
+     * @todo
+     * make this dynamic and modular
+     */
+    daysInCalendar() {
+      return generateCalendarDays(this.currentDate)
+    },
+  },
   methods: {
     formatDay(day) {
       return format(day, 'd')
+    },
+    isDayToday(date) {
+      const today = new Date()
+      return isSameDay(date, today)
     },
   },
 }
