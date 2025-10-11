@@ -1,4 +1,4 @@
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, parseISO } from 'date-fns'
 
 export function generateCalendarDays(currentDate) {
   const year = currentDate.getFullYear()
@@ -58,4 +58,15 @@ function renderNextDaysInCalendar(year, month, lastWeekday) {
     days.push({ date: day, isOtherMonth: true })
   }
   return days
+}
+
+export function dateTimeParserToString(datetime) {
+  const parseDate = parseISO(datetime)
+  const dateFormat = format(parseDate, 'MM-dd-yyyy')
+  const timeFormat = format(parseDate, 'HH:mm:ss')
+
+  return {
+    dateFormat,
+    timeFormat,
+  }
 }

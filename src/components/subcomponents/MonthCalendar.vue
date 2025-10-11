@@ -30,9 +30,10 @@
 
         <!-- Events -->
         <div class="flex-grow-1 overflow-auto">
-          <div class="event-pill mb-1">
-            <small class="badge bg-info text-dark w-100 text-start text-white"> test </small>
-            <small class="badge bg-info text-dark w-100 text-start text-white"> test </small>
+          <div class="event-pill mb-1" v-for="(event, key) in events" :key="key">
+            <small class="badge bg-info text-dark w-100 text-start text-white">
+              {{ renderEventTitle(day.date, event) }}
+            </small>
           </div>
         </div>
       </div>
@@ -54,6 +55,13 @@ export default {
         return new Date()
       },
     },
+    events: {
+      type: Array,
+      required: true,
+      default() {
+        return []
+      },
+    },
   },
   data() {
     return {
@@ -68,6 +76,10 @@ export default {
     daysInCalendar() {
       return generateCalendarDays(this.currentDate)
     },
+
+    parseDate() {
+      return dateTimeParserToString
+    },
   },
   methods: {
     formatDay(day) {
@@ -76,6 +88,10 @@ export default {
     isDayToday(date) {
       const today = new Date()
       return isSameDay(date, today)
+    },
+    renderEventTitle(date, event) {
+      const eventDate = event.datetime
+      return isSameDay(date, eventDate) ? event.title : null
     },
   },
 }

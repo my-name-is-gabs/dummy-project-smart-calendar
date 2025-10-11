@@ -7,7 +7,7 @@
       ></calendar-header>
 
       <!-- Make this dynamic -->
-      <month-calendar :current-date="currentDate"></month-calendar>
+      <month-calendar :current-date="currentDate" :events="events"></month-calendar>
     </div>
   </div>
 </template>
@@ -30,22 +30,9 @@ export default {
       default() {
         return [
           {
-            date: new Date(),
-            title: 'Event1',
+            title: 'Event 1',
             desc: 'This is a sample description',
-            time: '10:00 PM',
-          },
-          {
-            date: new Date(),
-            title: 'Event2',
-            desc: 'This is a sample description',
-            time: '11:00 AM',
-          },
-          {
-            date: new Date(),
-            title: 'Event3',
-            desc: 'This is a sample description',
-            time: '2:00 PM',
+            datetime: '2025-10-11T08:15:00Z',
           },
         ]
       },
@@ -58,7 +45,6 @@ export default {
   },
   computed: {
     /**
-     * @todo Make the date format dynamic
      * @returns {any}
      */
     calendarDateHeader() {

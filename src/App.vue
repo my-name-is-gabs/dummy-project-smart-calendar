@@ -1,6 +1,6 @@
 <template>
   <div>
-    <smart-calendar></smart-calendar>
+    <smart-calendar :events="dummyEvents"></smart-calendar>
   </div>
 </template>
 
@@ -19,11 +19,17 @@
  * </smart-calendar>
  */
 import SmartCalendar from './components/SmartCalendar.vue'
+import { events } from './seed/dummyData'
 
 export default {
   name: 'App',
   components: {
     SmartCalendar,
+  },
+  data() {
+    return {
+      dummyEvents: events,
+    }
   },
 }
 </script>
