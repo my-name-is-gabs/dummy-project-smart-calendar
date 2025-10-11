@@ -22,7 +22,7 @@
           class="p-2"
           :class="{
             'text-body-tertiary': day.isOtherMonth,
-            'fw-bold text-primary': isDayToday(day.date),
+            'fw-bold current-day': isDayToday(day.date),
           }"
         >
           {{ formatDay(day.date) }}
@@ -31,8 +31,8 @@
         <!-- Events -->
         <div class="flex-grow-1 overflow-auto">
           <div class="event-pill mb-1">
-            <small class="badge bg-primary text-dark w-100 text-start text-white"> test </small>
-            <small class="badge bg-primary text-dark w-100 text-start text-white"> test </small>
+            <small class="badge bg-info text-dark w-100 text-start text-white"> test </small>
+            <small class="badge bg-info text-dark w-100 text-start text-white"> test </small>
           </div>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default {
   },
   computed: {
     /**
-     * @todo
+     * @
      * make this dynamic and modular
      */
     daysInCalendar() {
@@ -88,5 +88,21 @@ export default {
 }
 .day-cell {
   min-height: 120px;
+}
+.current-day {
+  position: relative;
+  color: white;
+  z-index: 1;
+}
+
+.current-day::after {
+  position: absolute;
+  content: '';
+  background: #0d6efd;
+  width: 29px;
+  transform: translateX(-23px);
+  height: 29px;
+  z-index: -1;
+  border-radius: 100%;
 }
 </style>
