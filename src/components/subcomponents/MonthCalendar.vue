@@ -1,18 +1,14 @@
 <template>
   <main>
     <!-- Weeks -->
-    <div class="calendarGrid">
-      <div
-        class="text-center py-2 fw-bold border-bottom border-secondary"
-        v-for="(week, index) in weeks"
-        :key="index"
-      >
-        {{ week }}
-      </div>
+    <div class="calendar-grid">
+      <!-- Make this a dynamic component -->
+      <calendar-child-header :labels="weeks" :option="option"></calendar-child-header>
     </div>
+    <!-- end -->
 
     <!-- Days & events -->
-    <div class="calendarGrid">
+    <div class="calendar-grid">
       <div
         class="day-cell border border-secondary-subtle position-relative"
         v-for="(day, i) in daysInCalendar"
@@ -31,6 +27,7 @@
         <!-- Events -->
         <div class="flex-grow-1 overflow-auto">
           <div class="event-pill mb-1" v-for="(event, key) in events" :key="key">
+            <!-- For Event component make it a slot -->
             <small class="badge bg-info text-dark w-100 text-start text-white">
               {{ renderEventTitle(day.date, event) }}
             </small>
@@ -44,9 +41,13 @@
 <script>
 import { generateCalendarDays } from '@/services/calendarService'
 import { format, isSameDay } from 'date-fns'
+import CalendarChildHeader from '../common/CalendarChildHeader.vue'
 
 export default {
   name: 'MonthCalendar',
+  components: {
+    CalendarChildHeader,
+  },
   props: {
     currentDate: {
       type: Date,
@@ -66,6 +67,7 @@ export default {
   data() {
     return {
       weeks: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      option: 'month',
     }
   },
   computed: {
@@ -98,7 +100,7 @@ export default {
 </script>
 
 <style scoped>
-.calendarGrid {
+.calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
 }

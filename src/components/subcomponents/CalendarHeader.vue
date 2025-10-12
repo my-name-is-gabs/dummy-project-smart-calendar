@@ -13,11 +13,18 @@
       </div>
 
       <!-- Make this dynamic -->
-      <select class="justify-self-end" name="calendarType" id="calendarType">
-        <option value="day">Day</option>
-        <option value="week">Week</option>
-        <option value="month">Month</option>
-      </select>
+      <div class="justify-self-end">
+        <select
+          class="form-select"
+          name="calendarType"
+          id="calendarType"
+          @change="handleSelectOption"
+        >
+          <option v-for="(option, key) in calendarOptions" :key="key" :value="option">
+            {{ option }}
+          </option>
+        </select>
+      </div>
     </div>
   </header>
 </template>
@@ -43,8 +50,10 @@ export default {
           right: '>',
         },
       },
+      calendarOptions: ['day', 'week', 'month'],
     }
   },
+  emits: ['date-navigator', 'calendar-option'],
   methods: {
     emitNavigatorLeft() {
       this.$emit('date-navigator', 'prev')
@@ -54,6 +63,9 @@ export default {
     },
     emitToday() {
       this.$emit('date-navigator', 'today')
+    },
+    handleSelectOption(event) {
+      this.$emit('calendar-option', event.target.value)
     },
   },
 }

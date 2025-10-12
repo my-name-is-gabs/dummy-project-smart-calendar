@@ -4,10 +4,15 @@
       <calendar-header
         :current-date="calendarDateHeader"
         @date-navigator="navigateDate"
+        @calendar-option="getCalendarOption"
       ></calendar-header>
 
       <!-- Make this dynamic -->
-      <month-calendar :current-date="currentDate" :events="events"></month-calendar>
+      <component
+        :is="renderCalendarComponent"
+        :current-date="currentDate"
+        :events="events"
+      ></component>
     </div>
   </div>
 </template>
@@ -16,12 +21,14 @@
 import { format } from 'date-fns'
 import CalendarHeader from './subcomponents/CalendarHeader.vue'
 import MonthCalendar from './subcomponents/MonthCalendar.vue'
+import WeekCalendar from './subcomponents/WeekCalendar.vue'
 
 export default {
   name: 'SmartCalendar',
   components: {
     CalendarHeader,
     MonthCalendar,
+    WeekCalendar,
   },
   props: {
     events: {
@@ -41,6 +48,7 @@ export default {
   data() {
     return {
       currentDate: new Date(),
+      renderCalendarComponent: 'MonthCalendar',
     }
   },
   computed: {
@@ -78,6 +86,15 @@ export default {
     },
     toggleToday() {
       this.currentDate = new Date()
+    },
+
+    getCalendarOption(option) {
+      const componentMapper = {
+        day: 'DayCalendar',
+        week: 'WeekCalendar',
+        month: 'MonthCalendar',
+      }
+      this.renderCalendarComponent = componentMapper[option]
     },
   },
 }
