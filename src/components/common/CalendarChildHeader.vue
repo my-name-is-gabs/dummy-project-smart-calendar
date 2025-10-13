@@ -266,12 +266,6 @@ export default {
   }
 }
 
-/* Weekend styling */
-.day-label:nth-child(1),
-.day-label:nth-child(7) {
-  color: #dc3545; /* Red color for weekends */
-}
-
 .day-header:nth-child(1),
 .day-header:nth-child(7) {
   background-color: #fff5f5;
