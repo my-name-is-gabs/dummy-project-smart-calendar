@@ -24,8 +24,6 @@
           'weekend-other-month': isWeekend(day.date) && day.isOtherMonth,
         }"
         @click="handleDayClick(day)"
-        @dragover="handleDragOver"
-        @drop="handleEventDrop(day.date, $event)"
       >
         <!-- Date Number -->
         <div class="day-header p-2">
@@ -142,7 +140,7 @@ export default {
       default: true,
     },
   },
-  emits: ['day-click', 'event-click', 'event-drag', 'event-drop', 'more-events-click'],
+  emits: ['day-click', 'event-click', 'more-events-click'],
   computed: {
     calendarDays() {
       return generateCalendarDays(this.currentDate, this.weekStartsOn)
@@ -178,7 +176,7 @@ export default {
       const dayEvents = this.events.filter((event) =>
         isSameDay(event.datetime || event.startDate || event.date, date),
       )
-      return dayEvents.length - this.maxVisibleEvents
+      return Math.max(dayEvents.length - this.maxVisibleEvents, 0)
     },
 
     getEventBadgeClass(event) {
@@ -204,29 +202,6 @@ export default {
 
     handleEventClick(event) {
       this.$emit('event-click', event)
-    },
-
-    handleEventDragStart(event, dragEvent) {
-      dragEvent.dataTransfer.setData('text/plain', event.id)
-      this.$emit('event-drag', { event, dragEvent })
-    },
-
-    handleDragOver(dragEvent) {
-      dragEvent.preventDefault()
-    },
-
-    handleEventDrop(date, dropEvent) {
-      dropEvent.preventDefault()
-      const eventId = dropEvent.dataTransfer.getData('text/plain')
-      const event = this.events.find((e) => e.id === eventId)
-
-      if (event) {
-        this.$emit('event-drop', {
-          event,
-          newDate: date,
-          originalDate: event.datetime || event.startDate || event.date,
-        })
-      }
     },
 
     handleMoreEventsClick(date) {

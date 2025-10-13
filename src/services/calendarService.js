@@ -1,4 +1,4 @@
-import { startOfMonth, endOfMonth, parseISO } from 'date-fns'
+import { startOfMonth, endOfMonth, parseISO, format } from 'date-fns'
 
 export function generateCalendarDays(currentDate) {
   const year = currentDate.getFullYear()
