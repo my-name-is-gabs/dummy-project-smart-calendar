@@ -61,8 +61,6 @@
                   'bg-white': hour % 2 !== 0,
                 }"
                 @click="handleSlotClick(day.date, hour)"
-                @dragover="handleDragOver"
-                @drop="handleDrop(day.date, hour)"
               >
                 <!-- Events will be rendered here -->
                 <div
@@ -70,8 +68,6 @@
                   :key="event.id"
                   class="event-item small p-1 mb-1 rounded text-white"
                   :class="`bg-${event.type || 'primary'}`"
-                  draggable="true"
-                  @dragstart="handleDragStart(event)"
                 >
                   <div class="fw-bold">{{ event.title }}</div>
                   <small>{{ formatTime(event.startTime) }}</small>
@@ -134,6 +130,16 @@ export default {
     }
   },
 
+  emits: ['slot-click', 'event-drop'],
+
+  mounted() {
+    this.initializeCurrentTimeUpdater()
+  },
+
+  beforeUnmount() {
+    this.clearTimeInterval()
+  },
+
   computed: {
     weekDays() {
       const start = startOfWeek(this.currentDate, { weekStartsOn: 0 }) // Sunday
@@ -177,28 +183,6 @@ export default {
       })
     },
 
-    handleDragStart(event) {
-      this.draggedEvent = event
-    },
-
-    handleDragOver(e) {
-      e.preventDefault()
-    },
-
-    handleDrop(date, hour) {
-      if (this.draggedEvent) {
-        const newStartTime = setMinutes(
-          setHours(date, hour),
-          getMinutes(this.draggedEvent.startTime),
-        )
-        this.$emit('event-drop', {
-          event: this.draggedEvent,
-          newStartTime,
-        })
-        this.draggedEvent = null
-      }
-    },
-
     updateCurrentTime() {
       this.currentTime = new Date()
 
@@ -224,16 +208,6 @@ export default {
       }
     },
   },
-
-  mounted() {
-    this.initializeCurrentTimeUpdater()
-  },
-
-  beforeUnmount() {
-    this.clearTimeInterval()
-  },
-
-  emits: ['slot-click', 'event-drop'],
 }
 </script>
 
