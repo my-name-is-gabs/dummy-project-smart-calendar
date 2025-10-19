@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import CalendarHeader from './subcomponents/CalendarHeader.vue'
+import CalendarHeader from './subcomponents/calendarHeader/CalendarHeader.vue'
 import MonthCalendar from './subcomponents/MonthCalendar.vue'
 import WeekCalendar from './subcomponents/WeekCalendar.vue'
 import DayCalendar from './subcomponents/DayCalendar.vue'

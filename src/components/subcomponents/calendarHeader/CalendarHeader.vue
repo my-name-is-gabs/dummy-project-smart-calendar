@@ -4,71 +4,84 @@
       <!-- Left Section: Navigation & Date Display -->
       <div class="d-flex align-items-center gap-3">
         <!-- Today Button -->
-        <button class="btn btn-outline-primary rounded-pill px-4" @click="emitToday">
-          <i class="bi bi-calendar-check me-2"></i>
-          {{ labels.todayButton }}
-        </button>
+        <today-button :label="labels.todayButton" @today-click="emitToday" />
 
         <!-- Navigation Buttons -->
-        <div class="btn-group">
-          <button
-            class="btn btn-outline-secondary"
-            @click="emitNavigatorLeft"
-            :title="`Previous ${currentView}`"
-          >
-            <i class="bi bi-chevron-left"></i>
-          </button>
-          <button
-            class="btn btn-outline-secondary"
-            @click="emitNavigatorRight"
-            :title="`Next ${currentView}`"
-          >
-            <i class="bi bi-chevron-right"></i>
-          </button>
-        </div>
+        <navigation-buttons
+          :current-view="currentView"
+          @navigate-left="emitNavigatorLeft"
+          @navigate-right="emitNavigatorRight"
+        />
 
         <!-- Current Date Display -->
-        <div class="current-date-display">
-          <h4 class="mb-0 text-dark fw-bold">{{ formattedDate }}</h4>
-        </div>
+        <date-display :formatted-date="formattedDate" />
       </div>
 
       <!-- Right Section: View Selector -->
       <div class="d-flex align-items-center gap-3">
         <!-- View Type Selector -->
-        <div class="view-selector">
-          <select class="form-select" v-model="selectedView" @change="handleViewChange">
-            <option v-for="option in calendarOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
+        <view-selector
+          :options="calendarOptions"
+          :selected-view="selectedView"
+          @view-change="handleViewChange"
+        />
       </div>
     </div>
   </header>
 </template>
 
 <script>
-import { format, startOfWeek, endOfWeek } from 'date-fns'
+import DateFormatterService from '@/services/dateFormatterService'
+import ViewConfigService from '@/services/viewConfigService'
+import NavigationButtons from './common/NavigationButtons.vue'
+import DateDisplay from './common/DateDisplay.vue'
+import ViewSelector from './common/ViewSelector.vue'
+import TodayButton from './common/TodayButton.vue'
 
 export default {
   name: 'CalendarHeader',
+  components: {
+    TodayButton,
+    NavigationButtons,
+    DateDisplay,
+    ViewSelector,
+  },
   props: {
+    /**
+     * The currently displayed date in the calendar
+     * @type {Date}
+     */
     currentDate: {
       type: Date,
       required: true,
       default: () => new Date(),
     },
+
+    /**
+     * The current calendar view mode
+     * @type {string}
+     * @validValues 'day', 'week', 'month'
+     */
     currentView: {
       type: String,
       required: true,
       default: 'month',
       validator: (value) => ['day', 'week', 'month'].includes(value),
     },
+
+    /**
+     * Controls visibility of the view information display
+     * @type {boolean}
+     */
     showViewInfo: {
       type: Boolean,
       default: true,
     },
+
+    /**
+     * Custom date format patterns for different calendar views
+     * @type {Object}
+     */
     dateFormat: {
       type: Object,
       default: () => ({
@@ -77,10 +90,20 @@ export default {
         day: 'EEEE, MMMM d, yyyy',
       }),
     },
+
+    /**
+     * Custom UI labels to override default text content
+     * @type {Object}
+     */
     customLabels: {
       type: Object,
       default: null,
     },
+
+    /**
+     * Custom calendar view options to override default views
+     * @type {Array}
+     */
     customCalendarOptions: {
       type: Array,
       default: null,
@@ -89,63 +112,54 @@ export default {
   data() {
     return {
       selectedView: this.currentView,
-      defaultLabels: {
-        todayButton: 'Today',
-        toggle: {
-          left: '‹',
-          right: '›',
-        },
-      },
-      defaultCalendarOptions: [
-        { value: 'day', label: 'Day' },
-        { value: 'week', label: 'Week' },
-        { value: 'month', label: 'Month' },
-      ],
+      eventService: null,
     }
-  },
-  computed: {
-    labels() {
-      return this.customLabels
-        ? { ...this.defaultLabels, ...this.customLabels }
-        : this.defaultLabels
-    },
-
-    calendarOptions() {
-      return this.customCalendarOptions || this.defaultCalendarOptions
-    },
-
-    formattedDate() {
-      switch (this.currentView) {
-        case 'month':
-          return format(this.currentDate, this.dateFormat.month)
-
-        case 'week':
-          const weekStart = startOfWeek(this.currentDate, { weekStartsOn: 0 })
-          const weekEnd = endOfWeek(this.currentDate, { weekStartsOn: 0 })
-
-          if (format(weekStart, 'MMM yyyy') === format(weekEnd, 'MMM yyyy')) {
-            return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'd, yyyy')}`
-          } else if (format(weekStart, 'yyyy') === format(weekEnd, 'yyyy')) {
-            return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`
-          } else {
-            return `${format(weekStart, 'MMM d, yyyy')} - ${format(weekEnd, 'MMM d, yyyy')}`
-          }
-
-        case 'day':
-          return format(this.currentDate, this.dateFormat.day)
-
-        default:
-          return format(this.currentDate, 'MMMM yyyy')
-      }
-    },
   },
   emits: ['date-navigator', 'view-change', 'today-click'],
   watch: {
-    currentView(newView) {
-      this.selectedView = newView
+    /**
+     * Watches for changes in currentView and updates selectedView if valid
+     * @param {string} newView - The new view value
+     */
+    currentView: {
+      immediate: true,
+      handler(newView) {
+        if (ViewConfigService.isValidView(newView)) {
+          this.selectedView = newView
+        }
+      },
+    },
+  },
+  computed: {
+    /**
+     * Gets merged labels configuration with custom overrides
+     * @returns {Object} Labels object
+     */
+    labels() {
+      return ViewConfigService.getLabels(this.customLabels)
+    },
+
+    /**
+     * Gets calendar view options with custom overrides
+     * @returns {Array<Object>} Calendar options array
+     */
+    calendarOptions() {
+      return ViewConfigService.getCalendarOptions(this.customCalendarOptions)
+    },
+
+    /**
+     * Gets formatted date string for current view and date
+     * @returns {string} Formatted date display
+     */
+    formattedDate() {
+      const dateFormats = ViewConfigService.getDateFormats(this.dateFormat)
+      return DateFormatterService.formatDateForView(this.currentDate, this.currentView, dateFormats)
     },
   },
   methods: {
+    /**
+     * Emits date navigation event for previous period
+     */
     emitNavigatorLeft() {
       this.$emit('date-navigator', {
         direction: 'prev',
@@ -154,6 +168,9 @@ export default {
       })
     },
 
+    /**
+     * Emits date navigation event for next period
+     */
     emitNavigatorRight() {
       this.$emit('date-navigator', {
         direction: 'next',
@@ -162,6 +179,9 @@ export default {
       })
     },
 
+    /**
+     * Emits today button click event
+     */
     emitToday() {
       this.$emit('today-click', {
         view: this.currentView,
@@ -169,6 +189,9 @@ export default {
       })
     },
 
+    /**
+     * Emits view change event when calendar view is switched
+     */
     handleViewChange() {
       this.$emit('view-change', {
         view: this.selectedView,
