@@ -66,7 +66,7 @@ export default {
       type: String,
       required: true,
       default: 'month',
-      validator: (value) => ['day', 'week', 'month'].includes(value),
+      validator: (value) => ViewConfigService.isValidView(value),
     },
 
     /**
@@ -116,20 +116,6 @@ export default {
     }
   },
   emits: ['date-navigator', 'view-change', 'today-click'],
-  watch: {
-    /**
-     * Watches for changes in currentView and updates selectedView if valid
-     * @param {string} newView - The new view value
-     */
-    currentView: {
-      immediate: true,
-      handler(newView) {
-        if (ViewConfigService.isValidView(newView)) {
-          this.selectedView = newView
-        }
-      },
-    },
-  },
   computed: {
     /**
      * Gets merged labels configuration with custom overrides
@@ -192,10 +178,9 @@ export default {
     /**
      * Emits view change event when calendar view is switched
      */
-    handleViewChange() {
+    handleViewChange(view) {
       this.$emit('view-change', {
-        view: this.selectedView,
-        previousView: this.currentView,
+        view: view,
         currentDate: this.currentDate,
       })
     },
