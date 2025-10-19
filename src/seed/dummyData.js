@@ -12,14 +12,14 @@ const events = [
     title: 'Design Review',
     desc: 'Review new UX design drafts',
     datetime: 1739197800000,
-    type: 'info',
+    type: 'primary',
   },
   {
     id: 3,
     title: 'Evening Workout',
     desc: 'Gym session and cooldown',
     datetime: 1739213100000,
-    type: 'success',
+    type: 'primary',
   },
 
   // === Earlier Months (2025) ===
@@ -35,14 +35,14 @@ const events = [
     title: 'Spring Workshop',
     desc: 'Company-wide innovation workshop',
     datetime: 1745326800000,
-    type: 'warning',
+    type: 'primary',
   },
   {
     id: 6,
     title: 'Summer Hackathon',
     desc: 'Internal tech challenge event',
     datetime: 1751182200000,
-    type: 'info',
+    type: 'primary',
   },
   {
     id: 7,
@@ -58,14 +58,14 @@ const events = [
     title: 'Product Launch',
     desc: 'Launch of the new feature set',
     datetime: 1762065000000,
-    type: 'success',
+    type: 'primary',
   },
   {
     id: 9,
     title: 'Holiday Party',
     desc: 'End of year celebration with the team',
     datetime: 1766257200000,
-    type: 'warning',
+    type: 'primary',
   },
 
   // === Last Year (2024) ===
@@ -81,14 +81,14 @@ const events = [
     title: 'Midyear Meetup',
     desc: 'Networking and knowledge sharing',
     datetime: 1719312300000,
-    type: 'info',
+    type: 'primary',
   },
   {
     id: 12,
     title: 'Winter Planning',
     desc: 'Preparation for next fiscal year',
     datetime: 1733397300000,
-    type: 'warning',
+    type: 'primary',
   },
 
   // === Next Year (2026) ===
@@ -111,42 +111,42 @@ const events = [
     title: 'Client Conference',
     desc: 'Annual client engagement event',
     datetime: 1819015200000,
-    type: 'info',
+    type: 'success',
   },
   {
     id: 16,
     title: 'Morning Standup',
     desc: 'Daily team standup meeting',
     datetime: 1760850000000, // October 19, 2025 9:00 AM UTC
-    type: 'primary',
+    type: 'success',
   },
   {
     id: 17,
     title: 'Client Call',
     desc: 'Monthly check-in with key client',
     datetime: 1760859000000, // October 19, 2025 11:30 AM UTC
-    type: 'info',
+    type: 'success',
   },
   {
     id: 18,
     title: 'Lunch Break',
     desc: 'Team lunch at the new cafe',
     datetime: 1760864400000, // October 19, 2025 1:00 PM UTC
-    type: 'success',
+    type: 'primary',
   },
   {
     id: 19,
     title: 'Code Review',
     desc: 'Weekly code review session',
     datetime: 1760871600000, // October 19, 2025 3:00 PM UTC
-    type: 'warning',
+    type: 'primary',
   },
   {
     id: 20,
     title: 'Project Demo',
     desc: 'Demo new features to stakeholders',
     datetime: 1760877000000, // October 19, 2025 4:30 PM UTC
-    type: 'danger',
+    type: 'primary',
   },
 ]
 

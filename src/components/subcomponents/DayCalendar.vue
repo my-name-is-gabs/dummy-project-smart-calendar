@@ -35,7 +35,7 @@
               :class="`bg-${event.type || 'primary'}`"
             >
               <div class="fw-bold">{{ event.title }}</div>
-              <small>{{ formatTime(event.startTime) }}</small>
+              <small>{{ formatTime(event.datetime) }}</small>
             </div>
           </div>
 
@@ -115,9 +115,9 @@ export default {
     // FIXED THIS METHOD - was using isToday instead of isSameDay
     getEventsForHour(hour) {
       return this.events.filter((event) => {
-        const eventHour = getHours(event.startTime)
+        const eventHour = getHours(event.datetime)
         // Use isSameDay to compare with currentDate, not isToday
-        return isSameDay(event.startTime, this.currentDate) && eventHour === hour
+        return isSameDay(event.datetime, this.currentDate) && eventHour === hour
       })
     },
 

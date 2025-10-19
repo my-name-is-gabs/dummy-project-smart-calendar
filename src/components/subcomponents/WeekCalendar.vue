@@ -70,7 +70,7 @@
                   :class="`bg-${event.type || 'primary'}`"
                 >
                   <div class="fw-bold">{{ event.title }}</div>
-                  <small>{{ formatTime(event.startTime) }}</small>
+                  <small>{{ formatTime(event.datetime) }}</small>
                 </div>
               </div>
 
@@ -178,8 +178,8 @@ export default {
 
     getEventsForSlot(date, hour) {
       return this.events.filter((event) => {
-        const eventHour = getHours(event.startTime)
-        return isSameDay(event.startTime, date) && eventHour === hour
+        const eventHour = getHours(event.datetime)
+        return isSameDay(event.datetime, date) && eventHour === hour
       })
     },
 
@@ -282,7 +282,6 @@ export default {
 
 .event-item {
   font-size: 0.75rem;
-  cursor: move;
   border-left: 3px solid rgba(0, 0, 0, 0.2);
 }
 
