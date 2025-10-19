@@ -27,7 +27,7 @@ import { isSameDay, isSameWeek, isSameMonth } from 'date-fns'
 import CalendarHeader from './subcomponents/CalendarHeader.vue'
 import MonthCalendar from './subcomponents/MonthCalendar.vue'
 import WeekCalendar from './subcomponents/WeekCalendar.vue'
-import DayCalendar from './subcomponents/DayCalendar.vue' // You'll need to create this
+import DayCalendar from './subcomponents/DayCalendar.vue'
 
 export default {
   name: 'SmartCalendar',

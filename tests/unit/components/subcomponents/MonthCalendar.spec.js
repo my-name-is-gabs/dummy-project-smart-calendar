@@ -1,7 +1,7 @@
 // MonthCalendar.spec.js
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import { isSameDay, isToday as isTodayDate } from 'date-fns'
+import { isSameDay } from 'date-fns'
 import MonthCalendar from '@/components/subcomponents/MonthCalendar.vue'
 import { generateCalendarDays } from '@/services/calendarService'
 
