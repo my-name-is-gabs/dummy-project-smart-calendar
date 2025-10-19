@@ -113,6 +113,41 @@ const events = [
     datetime: 1819015200000,
     type: 'info',
   },
+  {
+    id: 16,
+    title: 'Morning Standup',
+    desc: 'Daily team standup meeting',
+    datetime: 1760850000000, // October 19, 2025 9:00 AM UTC
+    type: 'primary',
+  },
+  {
+    id: 17,
+    title: 'Client Call',
+    desc: 'Monthly check-in with key client',
+    datetime: 1760859000000, // October 19, 2025 11:30 AM UTC
+    type: 'info',
+  },
+  {
+    id: 18,
+    title: 'Lunch Break',
+    desc: 'Team lunch at the new cafe',
+    datetime: 1760864400000, // October 19, 2025 1:00 PM UTC
+    type: 'success',
+  },
+  {
+    id: 19,
+    title: 'Code Review',
+    desc: 'Weekly code review session',
+    datetime: 1760871600000, // October 19, 2025 3:00 PM UTC
+    type: 'warning',
+  },
+  {
+    id: 20,
+    title: 'Project Demo',
+    desc: 'Demo new features to stakeholders',
+    datetime: 1760877000000, // October 19, 2025 4:30 PM UTC
+    type: 'danger',
+  },
 ]
 
 export { events }

@@ -133,7 +133,7 @@ export default {
     },
     maxVisibleEvents: {
       type: Number,
-      default: 3,
+      default: 5,
     },
     showWeekends: {
       type: Boolean,
@@ -404,11 +404,6 @@ export default {
     top: 4px;
     left: 4px;
   }
-}
-
-/* Disable some interactions for other month days */
-.day-cell.other-month {
-  pointer-events: none;
 }
 
 .day-cell.other-month .event-item {

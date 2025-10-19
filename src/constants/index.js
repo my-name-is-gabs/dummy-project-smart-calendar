@@ -1,0 +1,5 @@
+const DAYS_IN_WEEK = 7
+const MONTH_OFFSET = 1
+const DAY_OFFSET = 1
+
+export { DAYS_IN_WEEK, MONTH_OFFSET, DAY_OFFSET }

@@ -23,11 +23,13 @@
 </template>
 
 <script>
-import { isSameDay, isSameWeek, isSameMonth } from 'date-fns'
 import CalendarHeader from './subcomponents/CalendarHeader.vue'
 import MonthCalendar from './subcomponents/MonthCalendar.vue'
 import WeekCalendar from './subcomponents/WeekCalendar.vue'
 import DayCalendar from './subcomponents/DayCalendar.vue'
+import EventFilterService from '@/services/eventFilterService'
+import ViewConfigManager from '@/config/viewConfigManager'
+import { DAY_OFFSET, DAYS_IN_WEEK, MONTH_OFFSET } from '@/constants'
 
 export default {
   name: 'SmartCalendar',
@@ -38,6 +40,18 @@ export default {
     DayCalendar,
   },
   props: {
+    /**
+     * Array of calendar events to display
+     * @type {Array<Object>}
+     * @default
+     * [{
+     *   id: 1,
+     *   title: 'Event 1',
+     *   desc: 'This is a sample description',
+     *   datetime: new Date('2025-01-15T10:00:00'),
+     *   type: 'primary'
+     * }]
+     */
     events: {
       type: Array,
       required: false,
@@ -58,11 +72,25 @@ export default {
         },
       ],
     },
+
+    /**
+     * The initial calendar view to display
+     * @type {string}
+     * @default 'month'
+     * @validValues 'day', 'week', 'month'
+     */
     initialView: {
       type: String,
       default: 'month',
-      validator: (value) => ['day', 'week', 'month'].includes(value),
+      validator: (value) => ViewConfigManager.isViewValid(value),
     },
+
+    /**
+     * The day the week starts on
+     * @type {number}
+     * @default 0
+     * @validValues 0 (Sunday), 1 (Monday)
+     */
     weekStartsOn: {
       type: Number,
       default: 0, // 0 = Sunday, 1 = Monday
@@ -75,142 +103,121 @@ export default {
       currentView: this.initialView,
     }
   },
+  emits: ['view-changed', 'today-clicked', 'event-clicked', 'day-clicked'],
   computed: {
+    /**
+     * Gets the current calendar component name based on the active view.
+     * @returns {string} The name of the Vue component for the current view
+     */
     currentCalendarComponent() {
-      const componentMap = {
-        day: 'DayCalendar',
-        week: 'WeekCalendar',
-        month: 'MonthCalendar',
-      }
-      return componentMap[this.currentView] || 'MonthCalendar'
+      return ViewConfigManager.getComponentName(this.currentView)
     },
 
+    /**
+     * Gets the props configuration for the current calendar component.
+     * @returns {Object} The props object configured for the current view component
+     */
     calendarComponentProps() {
       const baseProps = {
         weekStartsOn: this.weekStartsOn,
       }
 
-      // Add view-specific props if needed
-      switch (this.currentView) {
-        case 'week':
-          return { ...baseProps, showWeekends: true }
-        case 'month':
-          return { ...baseProps, maxVisibleEvents: 3 }
-        case 'day':
-          return { ...baseProps, showTimeSlots: true }
-        default:
-          return baseProps
-      }
+      return ViewConfigManager.getComponentProps(this.currentView, baseProps)
     },
 
+    /**
+     * Gets events filtered by the current calendar view and date.
+     * Uses EventFilterService to filter events based on day, week, or month view.
+     * @returns {Array<Object>} An array of event objects filtered to match the current view and date
+     * @see EventFilterService.filterEventsByView
+     */
     filteredEvents() {
-      // Filter events based on current view and date
-      return this.events.filter((event) => {
-        const eventDate = event.datetime || event.startDate || event.date
-
-        switch (this.currentView) {
-          case 'day':
-            return isSameDay(eventDate, this.currentDate)
-          case 'week':
-            return isSameWeek(eventDate, this.currentDate, { weekStartsOn: this.weekStartsOn })
-          case 'month':
-            return isSameMonth(eventDate, this.currentDate)
-          default:
-            return true
-        }
-      })
+      return EventFilterService.filterEventsByView(
+        this.events,
+        this.currentDate,
+        this.currentView,
+        this.weekStartsOn,
+      )
     },
   },
   methods: {
+    /**
+     * Handles date navigation based on direction and view
+     * @param {Object} params - Navigation parameters
+     * @param {'prev'|'next'} params.direction - Navigation direction
+     * @param {'day'|'week'|'month'} params.view - Current calendar view
+     * @param {Date} params.currentDate - Reference date for navigation
+     */
     handleDateNavigation({ direction, view, currentDate }) {
       const newDate = new Date(currentDate)
+      const navigationMapper = {
+        prev: this.navigateToPrevious,
+        next: this.navigateToNext,
+      }
 
-      switch (direction) {
-        case 'prev':
-          this.navigateToPrevious(newDate, view)
-          break
-        case 'next':
-          this.navigateToNext(newDate, view)
-          break
+      const navigator = navigationMapper[direction]
+
+      if (navigator) {
+        navigator.call(this, newDate, view)
+        this.currentDate = new Date(newDate)
       }
     },
 
+    /**
+     * Calculates the previous date based on view type
+     * @param {Date} date - Date to modify
+     * @param {'day'|'week'|'month'} view - Calendar view type
+     */
     navigateToPrevious(date, view) {
-      switch (view) {
-        case 'month':
-          date.setMonth(date.getMonth() - 1)
-          break
-        case 'week':
-          date.setDate(date.getDate() - 7)
-          break
-        case 'day':
-          date.setDate(date.getDate() - 1)
-          break
+      const navigationUnits = {
+        day: () => date.setDate(date.getDate() - DAY_OFFSET),
+        week: () => date.setDate(date.getDate() - DAYS_IN_WEEK),
+        month: () => date.setMonth(date.getMonth() - MONTH_OFFSET),
       }
-      this.currentDate = new Date(date)
+
+      const navigate = navigationUnits[view]
+
+      if (navigate) navigate()
     },
 
+    /**
+     * Calculates the next date based on view type
+     * @param {Date} date - Date to modify
+     * @param {'day'|'week'|'month'} view - Calendar view type
+     */
     navigateToNext(date, view) {
-      switch (view) {
-        case 'month':
-          date.setMonth(date.getMonth() + 1)
-          break
-        case 'week':
-          date.setDate(date.getDate() + 7)
-          break
-        case 'day':
-          date.setDate(date.getDate() + 1)
-          break
+      const navigationUnits = {
+        day: () => date.setDate(date.getDate() + DAY_OFFSET),
+        week: () => date.setDate(date.getDate() + DAYS_IN_WEEK),
+        month: () => date.setMonth(date.getMonth() + MONTH_OFFSET),
       }
-      this.currentDate = new Date(date)
+
+      const navigate = navigationUnits[view]
+
+      if (navigate) navigate()
     },
 
-    handleViewChange({ view, previousView, currentDate }) {
+    /**
+     * Handles calendar view changes and updates the current view/date
+     * @param {Object} params - View change parameters
+     * @param {'day'|'week'|'month'} params.view - The new calendar view to switch to
+     * @param {Date} params.currentDate - The date to set as current date in the new view
+     */
+    handleViewChange({ view, currentDate }) {
       this.currentView = view
       this.currentDate = new Date(currentDate)
-
-      // Emit event for parent component if needed
-      this.$emit('view-changed', {
-        newView: view,
-        previousView: previousView,
-        currentDate: this.currentDate,
-      })
     },
 
+    /**
+     * Handles "Today" button click to navigate to current date in specified view
+     * @param {Object} params - Today navigation parameters
+     * @param {'day'|'week'|'month'} params.view - The view to show for today's date
+     * @param {Date} params.date - The current date (typically today's date)
+     */
     handleTodayClick({ view, date }) {
       this.currentDate = new Date(date)
       this.currentView = view
-
-      // Emit event for parent component if needed
-      this.$emit('today-clicked', {
-        view: view,
-        date: this.currentDate,
-      })
     },
-
-    // Additional helper methods for event handling
-    handleEventClick(event) {
-      this.$emit('event-clicked', event)
-    },
-
-    handleEventDrop({ event, newDate, originalDate }) {
-      this.$emit('event-moved', {
-        event,
-        newDate,
-        originalDate,
-      })
-    },
-
-    handleDayClick(dayData) {
-      this.$emit('day-clicked', dayData)
-    },
-  },
-
-  emits: ['view-changed', 'today-clicked', 'event-clicked', 'event-moved', 'day-clicked'],
-
-  // Lifecycle hook to initialize with current date
-  mounted() {
-    console.log('SmartCalendar mounted with view:', this.currentView)
   },
 }
 </script>
