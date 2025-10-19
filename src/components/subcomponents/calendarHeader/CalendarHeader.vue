@@ -49,7 +49,6 @@ export default {
   props: {
     /**
      * The currently displayed date in the calendar
-     * @type {Date}
      */
     currentDate: {
       type: Date,
@@ -59,7 +58,6 @@ export default {
 
     /**
      * The current calendar view mode
-     * @type {string}
      * @validValues 'day', 'week', 'month'
      */
     currentView: {
@@ -71,7 +69,6 @@ export default {
 
     /**
      * Controls visibility of the view information display
-     * @type {boolean}
      */
     showViewInfo: {
       type: Boolean,
@@ -80,7 +77,6 @@ export default {
 
     /**
      * Custom date format patterns for different calendar views
-     * @type {Object}
      */
     dateFormat: {
       type: Object,
@@ -102,7 +98,6 @@ export default {
 
     /**
      * Custom calendar view options to override default views
-     * @type {Array}
      */
     customCalendarOptions: {
       type: Array,

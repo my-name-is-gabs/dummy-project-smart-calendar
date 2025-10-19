@@ -106,14 +106,25 @@ export default {
   name: 'WeekCalendar',
 
   props: {
+    /**
+     * The current date to display in the calendar
+     */
     currentDate: {
       type: Date,
       default: () => new Date(),
     },
+
+    /**
+     * Array of events to display on the calendar
+     */
     events: {
       type: Array,
       default: () => [],
     },
+
+    /**
+     * Whether to use 12-hour format (AM/PM) instead of 24-hour format
+     */
     hourFormat12: {
       type: Boolean,
       default: true,
@@ -141,6 +152,10 @@ export default {
   },
 
   computed: {
+    /**
+     * Array of days for the current week with their details
+     * @returns {Array<Object>} Array of day objects with date information
+     */
     weekDays() {
       const start = startOfWeek(this.currentDate, { weekStartsOn: 0 }) // Sunday
       const end = endOfWeek(this.currentDate, { weekStartsOn: 0 }) // Saturday
@@ -158,6 +173,11 @@ export default {
   },
 
   methods: {
+    /**
+     * Format hour based on 12 or 24 hour format
+     * @param {number} hour - The hour to format (0-23)
+     * @returns {string} Formatted hour string
+     */
     formatHour(hour) {
       if (this.hourFormat12) {
         if (hour === 0) return '12 AM'
@@ -167,15 +187,31 @@ export default {
       return `${hour.toString().padStart(2, '0')}:00`
     },
 
+    /**
+     * Format a date to display time
+     * @param {Date} date - The date to format
+     * @returns {string} Formatted time string
+     */
     formatTime(date) {
       return format(date, this.hourFormat12 ? 'h:mm a' : 'HH:mm')
     },
 
+    /**
+     * Handle when a time slot is clicked
+     * @param {Date} date - The date of the clicked slot
+     * @param {number} hour - The hour of the clicked slot
+     */
     handleSlotClick(date, hour) {
       const clickedDateTime = setMinutes(setHours(date, hour), 0)
       this.$emit('slot-click', clickedDateTime)
     },
 
+    /**
+     * Get events for a specific time slot
+     * @param {Date} date - The date to check
+     * @param {number} hour - The hour to check
+     * @returns {Array} Array of events for that time slot
+     */
     getEventsForSlot(date, hour) {
       return this.events.filter((event) => {
         const eventHour = getHours(event.datetime)
@@ -183,6 +219,9 @@ export default {
       })
     },
 
+    /**
+     * Update the current time and position indicator
+     */
     updateCurrentTime() {
       this.currentTime = new Date()
 
@@ -195,12 +234,18 @@ export default {
       }
     },
 
+    /**
+     * Initialize the current time updater interval
+     */
     initializeCurrentTimeUpdater() {
       this.updateCurrentTime()
       // Update current time every minute
       this.timeInterval = setInterval(this.updateCurrentTime, 60000)
     },
 
+    /**
+     * Clear the time update interval
+     */
     clearTimeInterval() {
       if (this.timeInterval) {
         clearInterval(this.timeInterval)

@@ -42,15 +42,6 @@ export default {
   props: {
     /**
      * Array of calendar events to display
-     * @type {Array<Object>}
-     * @default
-     * [{
-     *   id: 1,
-     *   title: 'Event 1',
-     *   desc: 'This is a sample description',
-     *   datetime: new Date('2025-01-15T10:00:00'),
-     *   type: 'primary'
-     * }]
      */
     events: {
       type: Array,
@@ -75,8 +66,6 @@ export default {
 
     /**
      * The initial calendar view to display
-     * @type {string}
-     * @default 'month'
      * @validValues 'day', 'week', 'month'
      */
     initialView: {
@@ -87,8 +76,6 @@ export default {
 
     /**
      * The day the week starts on
-     * @type {number}
-     * @default 0
      * @validValues 0 (Sunday), 1 (Monday)
      */
     weekStartsOn: {

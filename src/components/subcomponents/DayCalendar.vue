@@ -62,14 +62,28 @@ export default {
   name: 'DayCalendar',
 
   props: {
+    /**
+     * The current date to display in the calendar
+     * @type {Date}
+     */
     currentDate: {
       type: Date,
       default: () => new Date(),
     },
+
+    /**
+     * Array of events to display on the calendar
+     * @type {Array}
+     */
     events: {
       type: Array,
       default: () => [],
     },
+
+    /**
+     * Whether to use 12-hour format (AM/PM) instead of 24-hour format
+     * @type {boolean}
+     */
     hourFormat12: {
       type: Boolean,
       default: true,
@@ -84,8 +98,28 @@ export default {
       timeInterval: null,
     }
   },
+  mounted() {
+    this.initializeCurrentTimeUpdater()
+  },
 
+  beforeUnmount() {
+    this.clearTimeInterval()
+  },
+  emits: ['slot-click'],
+  watch: {
+    currentDate: {
+      immediate: true,
+      handler() {
+        this.updateCurrentTime()
+      },
+    },
+  },
   methods: {
+    /**
+     * Format hour based on 12 or 24 hour format
+     * @param {number} hour - The hour to format (0-23)
+     * @returns {string} Formatted hour string
+     */
     formatHour(hour) {
       if (this.hourFormat12) {
         if (hour === 0) return '12 AM'
@@ -95,32 +129,57 @@ export default {
       return `${hour.toString().padStart(2, '0')}:00`
     },
 
+    /**
+     * Format a date to display time
+     * @param {Date} date - The date to format
+     * @returns {string} Formatted time string
+     */
     formatTime(date) {
       return format(date, this.hourFormat12 ? 'h:mm a' : 'HH:mm')
     },
 
+    /**
+     * Format date for header display
+     * @param {Date} date - The date to format
+     * @returns {string} Formatted date string
+     */
     formatDateHeader(date) {
       return format(date, 'EEEE, MMMM d, yyyy')
     },
 
+    /**
+     * Check if a date is today
+     * @param {Date} date - The date to check
+     * @returns {boolean} True if the date is today
+     */
     isToday(date) {
       return isToday(date)
     },
 
+    /**
+     * Handle when a time slot is clicked
+     * @param {number} hour - The hour of the clicked slot
+     */
     handleSlotClick(hour) {
       const clickedDateTime = setMinutes(setHours(this.currentDate, hour), 0)
       this.$emit('slot-click', clickedDateTime)
     },
 
-    // FIXED THIS METHOD - was using isToday instead of isSameDay
+    /**
+     * Get events for a specific hour on current date
+     * @param {number} hour - The hour to check
+     * @returns {Array} Array of events for that hour
+     */
     getEventsForHour(hour) {
       return this.events.filter((event) => {
         const eventHour = getHours(event.datetime)
-        // Use isSameDay to compare with currentDate, not isToday
         return isSameDay(event.datetime, this.currentDate) && eventHour === hour
       })
     },
 
+    /**
+     * Update the current time and position indicator
+     */
     updateCurrentTime() {
       this.currentTime = new Date()
 
@@ -134,11 +193,17 @@ export default {
       }
     },
 
+    /**
+     * Initialize the current time updater interval
+     */
     initializeCurrentTimeUpdater() {
       this.updateCurrentTime()
       this.timeInterval = setInterval(this.updateCurrentTime, 60000)
     },
 
+    /**
+     * Clear the time update interval
+     */
     clearTimeInterval() {
       if (this.timeInterval) {
         clearInterval(this.timeInterval)
@@ -146,25 +211,6 @@ export default {
       }
     },
   },
-
-  mounted() {
-    this.initializeCurrentTimeUpdater()
-  },
-
-  beforeUnmount() {
-    this.clearTimeInterval()
-  },
-
-  watch: {
-    currentDate: {
-      immediate: true,
-      handler() {
-        this.updateCurrentTime()
-      },
-    },
-  },
-
-  emits: ['slot-click'],
 }
 </script>
 
