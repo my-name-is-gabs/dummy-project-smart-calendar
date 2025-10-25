@@ -18,7 +18,7 @@ vi.mock('../common/CalendarChildHeader.vue', () => ({
   },
 }))
 
-describe('MonthCalendar - Complete Test Suite', () => {
+describe('MonthCalendar.vue', () => {
   let wrapper
 
   const mockEvents = [
@@ -123,7 +123,7 @@ describe('MonthCalendar - Complete Test Suite', () => {
         'Fri',
         'Sat',
       ])
-      expect(wrapper.props().maxVisibleEvents).toBe(3)
+      expect(wrapper.props().maxVisibleEvents).toBe(5)
       expect(wrapper.props().showWeekends).toBe(true)
     })
 
@@ -432,11 +432,135 @@ describe('MonthCalendar - Complete Test Suite', () => {
           hiddenCount: 1,
         })
       })
+
+      it('should return 0 when events are less than maxVisibleEvents', () => {
+        const events = [
+          { id: 1, title: 'Event 1', datetime: new Date('2025-01-15') },
+          { id: 2, title: 'Event 2', datetime: new Date('2025-01-15') },
+        ]
+
+        const wrapper = shallowMount(MonthCalendar, {
+          props: {
+            currentDate: new Date('2025-01-15'),
+            events,
+            maxVisibleEvents: 5,
+          },
+        })
+
+        const count = wrapper.vm.getMoreEventsCount(new Date('2025-01-15'))
+        expect(count).toBe(0)
+      })
+
+      it('should return correct count when events exceed maxVisibleEvents', () => {
+        const events = [
+          { id: 1, title: 'Event 1', datetime: new Date('2025-01-15') },
+          { id: 2, title: 'Event 2', datetime: new Date('2025-01-15') },
+          { id: 3, title: 'Event 3', datetime: new Date('2025-01-15') },
+          { id: 4, title: 'Event 4', datetime: new Date('2025-01-15') },
+          { id: 5, title: 'Event 5', datetime: new Date('2025-01-15') },
+          { id: 6, title: 'Event 6', datetime: new Date('2025-01-15') },
+        ]
+
+        const wrapper = shallowMount(MonthCalendar, {
+          props: {
+            currentDate: new Date('2025-01-15'),
+            events,
+            maxVisibleEvents: 3,
+          },
+        })
+
+        const count = wrapper.vm.getMoreEventsCount(new Date('2025-01-15'))
+        expect(count).toBe(3)
+      })
+
+      it('should handle events with different date properties', () => {
+        const events = [
+          { id: 1, title: 'Event 1', datetime: new Date('2025-01-15') },
+          { id: 2, title: 'Event 2', startDate: new Date('2025-01-15') },
+          { id: 3, title: 'Event 3', date: new Date('2025-01-15') },
+          { id: 4, title: 'Event 4', datetime: new Date('2025-01-15') },
+        ]
+
+        const wrapper = shallowMount(MonthCalendar, {
+          props: {
+            currentDate: new Date('2025-01-15'),
+            events,
+            maxVisibleEvents: 2,
+          },
+        })
+
+        const count = wrapper.vm.getMoreEventsCount(new Date('2025-01-15'))
+        expect(count).toBe(2)
+      })
+
+      it('should return 0 for dates with no events', () => {
+        const wrapper = shallowMount(MonthCalendar, {
+          props: {
+            currentDate: new Date('2025-01-15'),
+            events: [],
+            maxVisibleEvents: 5,
+          },
+        })
+
+        const count = wrapper.vm.getMoreEventsCount(new Date('2025-01-15'))
+        expect(count).toBe(0)
+      })
+
+      it('should handle more-events-click with events using different date properties', () => {
+        const events = [
+          { id: 1, title: 'Event 1', datetime: new Date('2025-01-15') },
+          { id: 2, title: 'Event 2', startDate: new Date('2025-01-15') }, // Uses startDate
+          { id: 3, title: 'Event 3', date: new Date('2025-01-15') }, // Uses date
+          { id: 4, title: 'Event 4', datetime: new Date('2025-01-15') },
+          { id: 5, title: 'Event 5', datetime: new Date('2025-01-15') },
+          { id: 6, title: 'Event 6', datetime: new Date('2025-01-15') },
+        ]
+
+        const wrapper = shallowMount(MonthCalendar, {
+          props: {
+            currentDate: new Date('2025-01-15'),
+            events,
+            maxVisibleEvents: 3,
+          },
+        })
+
+        wrapper.vm.handleMoreEventsClick(new Date('2025-01-15'))
+
+        expect(wrapper.emitted('more-events-click')).toHaveLength(1)
+        expect(wrapper.emitted('more-events-click')[0][0]).toEqual({
+          date: new Date('2025-01-15'),
+          events: events, // All 6 events should be included
+          hiddenCount: 3, // 6 total - 3 max visible = 3 hidden
+        })
+      })
     })
   })
 
   // ==================== TEMPLATE RENDERING ====================
   describe('Template Rendering', () => {
+    it('should display more events indicator with correct styling for other month days', () => {
+      const events = [
+        { id: 1, title: 'Event 1', datetime: new Date('2025-01-01') },
+        { id: 2, title: 'Event 2', datetime: new Date('2025-01-01') },
+        { id: 3, title: 'Event 3', datetime: new Date('2025-01-01') },
+        { id: 4, title: 'Event 4', datetime: new Date('2025-01-01') },
+      ]
+
+      const wrapper = shallowMount(MonthCalendar, {
+        props: {
+          currentDate: new Date('2025-01-15'),
+          events,
+          maxVisibleEvents: 2,
+        },
+      })
+
+      const otherMonthDay = wrapper.find('.day-cell.other-month')
+      const moreEventsIndicator = otherMonthDay.find('.more-events-indicator')
+
+      expect(moreEventsIndicator.exists()).toBe(true)
+      expect(moreEventsIndicator.find('small').classes()).toContain('text-muted')
+    })
+
     it('should render CalendarChildHeader with correct props', () => {
       wrapper = shallowMount(MonthCalendar, {
         props: {

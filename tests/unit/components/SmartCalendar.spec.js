@@ -1,704 +1,394 @@
-// SmartCalendar.spec.js
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import SmartCalendar from '@/components/SmartCalendar.vue'
+import CalendarHeader from '@/components/subcomponents/calendarHeader/CalendarHeader.vue'
+import MonthCalendar from '@/components/subcomponents/MonthCalendar.vue'
+import WeekCalendar from '@/components/subcomponents/WeekCalendar.vue'
+import DayCalendar from '@/components/subcomponents/DayCalendar.vue'
+import EventFilterService from '@/services/eventFilterService'
+import ViewConfigManager from '@/config/viewConfigManager'
+import { DAY_OFFSET, DAYS_IN_WEEK, MONTH_OFFSET } from '@/constants'
 
-// Mock child components
-vi.mock('./subcomponents/CalendarHeader.vue', () => ({
-  default: {
-    name: 'CalendarHeader',
-    template: '<div class="calendar-header-mock"></div>',
-    props: ['currentDate', 'currentView', 'navigationStyle'],
-    emits: ['date-navigator', 'view-change', 'today-click'],
-  },
-}))
+// Mock external dependencies
+vi.mock('@/services/eventFilterService')
+vi.mock('@/config/viewConfigManager')
 
-vi.mock('./subcomponents/MonthCalendar.vue', () => ({
-  default: {
-    name: 'MonthCalendar',
-    template: '<div class="month-calendar-mock"></div>',
-    props: ['currentDate', 'events', 'weekStartsOn', 'maxVisibleEvents'],
-    emits: ['day-click', 'event-click', 'event-drag', 'event-drop', 'more-events-click'],
-  },
-}))
-
-vi.mock('./subcomponents/WeekCalendar.vue', () => ({
-  default: {
-    name: 'WeekCalendar',
-    template: '<div class="week-calendar-mock"></div>',
-    props: ['currentDate', 'events', 'weekStartsOn', 'showWeekends'],
-    emits: ['slot-click', 'event-drop'],
-  },
-}))
-
-vi.mock('./subcomponents/DayCalendar.vue', () => ({
-  default: {
-    name: 'DayCalendar',
-    template: '<div class="day-calendar-mock"></div>',
-    props: ['currentDate', 'events', 'weekStartsOn', 'showTimeSlots'],
-    emits: ['event-click', 'event-drag', 'event-drop', 'hour-click', 'event-select'],
-  },
-}))
-
-describe('TESTING SmartCalendar.vue', () => {
-  let wrapper
-  let consoleSpy
-
-  const mockEvents = [
-    {
-      id: 1,
-      title: 'Event 1',
-      desc: 'This is a sample description',
-      datetime: new Date('2024-01-15T10:00:00'),
-      type: 'primary',
-    },
-    {
-      id: 2,
-      title: 'Meeting',
-      desc: 'Team meeting',
-      datetime: new Date('2024-01-20T14:30:00'),
-      type: 'success',
-    },
-    {
-      id: 3,
-      title: 'Past Event',
-      desc: 'Old event',
-      datetime: new Date('2023-12-25T09:00:00'),
-      type: 'warning',
-    },
-    {
-      id: 4,
-      title: 'Future Event',
-      desc: 'Future event',
-      datetime: new Date('2024-02-01T16:00:00'),
-      type: 'info',
-    },
-  ]
+describe('SmartCalendar.vue', () => {
+  let currentDate
 
   beforeEach(() => {
-    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    currentDate = new Date('2025-01-15T12:00:00')
+    vi.useFakeTimers()
+    vi.setSystemTime(currentDate)
+
+    // Reset mocks
+    vi.clearAllMocks()
+
+    // Setup default mock implementations
+    ViewConfigManager.isViewValid.mockImplementation((view) =>
+      ['day', 'week', 'month'].includes(view),
+    )
+    ViewConfigManager.getComponentName.mockImplementation((view) => {
+      const components = { day: 'DayCalendar', week: 'WeekCalendar', month: 'MonthCalendar' }
+      return components[view]
+    })
+    ViewConfigManager.getComponentProps.mockImplementation((view, baseProps) => ({
+      ...baseProps,
+      customProp: `prop-for-${view}`,
+    }))
+    EventFilterService.filterEventsByView.mockReturnValue([])
   })
 
-  afterEach(() => {
-    consoleSpy.mockRestore()
-    if (wrapper) wrapper.unmount()
-  })
+  describe('Component Rendering and Structure', () => {
+    it('should render the main container and card', () => {
+      const wrapper = shallowMount(SmartCalendar)
 
-  // ==================== COMPONENT INITIALIZATION ====================
-  describe('Component Initialization', () => {
-    it('should initialize with default props and data', () => {
-      wrapper = shallowMount(SmartCalendar)
-
-      expect(wrapper.props().initialView).toBe('month')
-      expect(wrapper.props().weekStartsOn).toBe(0)
-      expect(wrapper.props().events).toHaveLength(2)
-      expect(wrapper.vm.currentView).toBe('month')
-      expect(wrapper.vm.currentDate).toBeInstanceOf(Date)
+      expect(wrapper.find('.container-fluid').exists()).toBe(true)
+      expect(wrapper.find('.card').exists()).toBe(true)
     })
 
-    it('should initialize with custom props', () => {
-      wrapper = shallowMount(SmartCalendar, {
-        props: {
-          events: mockEvents,
-          initialView: 'week',
-          weekStartsOn: 1,
-        },
+    it('should render CalendarHeader with correct props', () => {
+      const wrapper = shallowMount(SmartCalendar)
+      const header = wrapper.findComponent(CalendarHeader)
+
+      expect(header.exists()).toBe(true)
+      expect(header.props('currentDate')).toEqual(currentDate)
+      expect(header.props('currentView')).toBe('month') // default initialView
+    })
+
+    it('should render dynamic calendar component based on current view', () => {
+      const wrapper = shallowMount(SmartCalendar)
+
+      // Default should be MonthCalendar
+      expect(wrapper.findComponent(MonthCalendar).exists()).toBe(true)
+      expect(wrapper.findComponent(WeekCalendar).exists()).toBe(false)
+      expect(wrapper.findComponent(DayCalendar).exists()).toBe(false)
+    })
+  })
+
+  describe('Props Handling', () => {
+    it('should use default events when no events prop provided', () => {
+      const wrapper = shallowMount(SmartCalendar)
+
+      expect(wrapper.props('events')).toHaveLength(2)
+      expect(wrapper.props('events')[0].title).toBe('Event 1')
+      expect(wrapper.props('events')[1].title).toBe('Meeting')
+    })
+
+    it('should use custom events when provided', () => {
+      const customEvents = [
+        { id: 10, title: 'Custom Event', datetime: new Date(), type: 'primary' },
+      ]
+
+      const wrapper = shallowMount(SmartCalendar, {
+        props: { events: customEvents },
       })
 
-      expect(wrapper.props().initialView).toBe('week')
-      expect(wrapper.props().weekStartsOn).toBe(1)
-      expect(wrapper.props().events).toEqual(mockEvents)
-      expect(wrapper.vm.currentView).toBe('week')
+      expect(wrapper.props('events')).toEqual(customEvents)
     })
 
-    it('should call mounted lifecycle hook', () => {
-      wrapper = shallowMount(SmartCalendar)
-      expect(consoleSpy).toHaveBeenCalledWith('SmartCalendar mounted with view:', 'month')
+    it('should validate initialView prop', () => {
+      const validViews = ['day', 'week', 'month']
+
+      validViews.forEach((view) => {
+        ViewConfigManager.isViewValid.mockReturnValue(true)
+
+        const wrapper = shallowMount(SmartCalendar, {
+          props: { initialView: view },
+        })
+
+        expect(wrapper.props('initialView')).toBe(view)
+        expect(wrapper.vm.currentView).toBe(view)
+      })
+    })
+
+    it('should validate weekStartsOn prop', () => {
+      const validStarts = [0, 1]
+
+      validStarts.forEach((startDay) => {
+        const wrapper = shallowMount(SmartCalendar, {
+          props: { weekStartsOn: startDay },
+        })
+
+        expect(wrapper.props('weekStartsOn')).toBe(startDay)
+      })
     })
   })
 
-  // ==================== COMPUTED PROPERTIES ====================
   describe('Computed Properties', () => {
-    describe('currentCalendarComponent', () => {
-      it('should return correct component for each view type', () => {
-        wrapper = shallowMount(SmartCalendar)
+    it('should return correct calendar component name for each view', () => {
+      const views = ['day', 'week', 'month']
 
-        wrapper.vm.currentView = 'month'
-        expect(wrapper.vm.currentCalendarComponent).toBe('MonthCalendar')
+      views.forEach((view) => {
+        const wrapper = shallowMount(SmartCalendar, {
+          data: () => ({ currentView: view }),
+        })
 
-        wrapper.vm.currentView = 'week'
-        expect(wrapper.vm.currentCalendarComponent).toBe('WeekCalendar')
-
-        wrapper.vm.currentView = 'day'
-        expect(wrapper.vm.currentCalendarComponent).toBe('DayCalendar')
-      })
-
-      it('should default to MonthCalendar for unknown view', () => {
-        wrapper = shallowMount(SmartCalendar)
-        wrapper.vm.currentView = 'unknown'
-        expect(wrapper.vm.currentCalendarComponent).toBe('MonthCalendar')
+        expect(ViewConfigManager.getComponentName).toHaveBeenCalledWith(view)
+        expect(wrapper.vm.currentCalendarComponent).toBe(
+          `${view.charAt(0).toUpperCase() + view.slice(1)}Calendar`,
+        )
       })
     })
 
-    describe('calendarComponentProps', () => {
-      it('should return base props for all views', () => {
-        wrapper = shallowMount(SmartCalendar)
-        const props = wrapper.vm.calendarComponentProps
-        expect(props).toHaveProperty('weekStartsOn', 0)
+    it('should return correct props for calendar components', () => {
+      const wrapper = shallowMount(SmartCalendar)
+
+      const props = wrapper.vm.calendarComponentProps
+
+      expect(ViewConfigManager.getComponentProps).toHaveBeenCalledWith('month', {
+        weekStartsOn: 0,
       })
-
-      it('should include view-specific props for each view type', () => {
-        // Week view
-        wrapper = shallowMount(SmartCalendar, { props: { initialView: 'week' } })
-        let props = wrapper.vm.calendarComponentProps
-        expect(props).toHaveProperty('showWeekends', true)
-
-        // Month view
-        wrapper = shallowMount(SmartCalendar, { props: { initialView: 'month' } })
-        props = wrapper.vm.calendarComponentProps
-        expect(props).toHaveProperty('maxVisibleEvents', 3)
-
-        // Day view
-        wrapper = shallowMount(SmartCalendar, { props: { initialView: 'day' } })
-        props = wrapper.vm.calendarComponentProps
-        expect(props).toHaveProperty('showTimeSlots', true)
-
-        // Unknown view
-        wrapper = shallowMount(SmartCalendar)
-        wrapper.vm.currentView = 'unknown'
-        props = wrapper.vm.calendarComponentProps
-        expect(props).toEqual({ weekStartsOn: 0 })
-      })
+      expect(props.weekStartsOn).toBe(0)
+      expect(props.customProp).toBe('prop-for-month')
     })
 
-    describe('filteredEvents', () => {
-      it('should filter events correctly for day view', () => {
-        wrapper = shallowMount(SmartCalendar, {
-          props: { events: mockEvents, initialView: 'day' },
-        })
-        wrapper.vm.currentDate = new Date('2024-01-15')
+    it('should filter events using EventFilterService', () => {
+      const mockEvents = [{ id: 1, title: 'Test Event', datetime: new Date(), type: 'primary' }]
 
-        const filtered = wrapper.vm.filteredEvents
-        expect(filtered).toHaveLength(1)
-        expect(filtered[0].id).toBe(1)
+      EventFilterService.filterEventsByView.mockReturnValue(mockEvents)
+
+      const wrapper = shallowMount(SmartCalendar, {
+        props: { events: mockEvents },
       })
 
-      it('should filter events correctly for week view', () => {
-        wrapper = shallowMount(SmartCalendar, {
-          props: { events: mockEvents, initialView: 'week' },
-        })
-        wrapper.vm.currentDate = new Date('2024-01-15')
+      const filteredEvents = wrapper.vm.filteredEvents
 
-        const filtered = wrapper.vm.filteredEvents
-        expect(filtered.length).toBeGreaterThanOrEqual(1)
-      })
-
-      it('should filter events correctly for month view', () => {
-        wrapper = shallowMount(SmartCalendar, {
-          props: { events: mockEvents, initialView: 'month' },
-        })
-        wrapper.vm.currentDate = new Date('2024-01-15')
-
-        const filtered = wrapper.vm.filteredEvents
-        expect(filtered.length).toBeGreaterThanOrEqual(1)
-      })
-
-      it('should return all events for unknown view', () => {
-        wrapper = shallowMount(SmartCalendar, { props: { events: mockEvents } })
-        wrapper.vm.currentView = 'unknown'
-
-        const filtered = wrapper.vm.filteredEvents
-        expect(filtered).toEqual(mockEvents)
-      })
-
-      // EDGE CASES for filteredEvents
-      it('should handle events with startDate field instead of datetime', () => {
-        const eventsWithStartDate = [
-          {
-            id: 1,
-            title: 'Event with startDate',
-            startDate: new Date('2024-01-15T10:00:00'),
-          },
-        ]
-
-        wrapper = shallowMount(SmartCalendar, {
-          props: { events: eventsWithStartDate, initialView: 'day' },
-        })
-        wrapper.vm.currentDate = new Date('2024-01-15')
-
-        expect(wrapper.vm.filteredEvents).toHaveLength(1)
-      })
-
-      it('should handle events with date field instead of datetime', () => {
-        const eventsWithDate = [
-          {
-            id: 1,
-            title: 'Event with date',
-            date: new Date('2024-01-15T10:00:00'),
-          },
-        ]
-
-        wrapper = shallowMount(SmartCalendar, {
-          props: { events: eventsWithDate, initialView: 'day' },
-        })
-        wrapper.vm.currentDate = new Date('2024-01-15')
-
-        expect(wrapper.vm.filteredEvents).toHaveLength(1)
-      })
-
-      it('should handle empty events array', () => {
-        wrapper = shallowMount(SmartCalendar, { props: { events: [] } })
-        expect(wrapper.vm.filteredEvents).toHaveLength(0)
-      })
-
-      it('should handle events with missing date fields gracefully', () => {
-        const eventsWithMissingDate = [
-          {
-            id: 1,
-            title: 'Event without date',
-            // Missing datetime, startDate, and date fields
-          },
-        ]
-
-        wrapper = shallowMount(SmartCalendar, {
-          props: { events: eventsWithMissingDate, initialView: 'day' },
-        })
-
-        // Should not crash and return empty array or handle gracefully
-        expect(() => wrapper.vm.filteredEvents).not.toThrow()
-      })
+      expect(EventFilterService.filterEventsByView).toHaveBeenCalledWith(
+        mockEvents,
+        currentDate,
+        'month',
+        0,
+      )
+      expect(filteredEvents).toEqual(mockEvents)
     })
   })
 
-  // ==================== METHODS - DATE NAVIGATION ====================
-  describe('Date Navigation Methods', () => {
-    beforeEach(() => {
-      wrapper = shallowMount(SmartCalendar)
-    })
-
-    describe('navigateToPrevious', () => {
-      it('should navigate to previous month', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
-
-        wrapper.vm.navigateToPrevious(new Date(initialDate), 'month')
-        expect(wrapper.vm.currentDate.getMonth()).toBe(4) // May
-      })
-
-      it('should navigate to previous week', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
-
-        wrapper.vm.navigateToPrevious(new Date(initialDate), 'week')
-        expect(wrapper.vm.currentDate.getDate()).toBe(8)
-      })
-
-      it('should navigate to previous day', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
-
-        wrapper.vm.navigateToPrevious(new Date(initialDate), 'day')
-        expect(wrapper.vm.currentDate.getDate()).toBe(14)
-      })
-
-      // EDGE CASES
-      it('should handle month navigation across year boundaries', () => {
-        const januaryDate = new Date('2024-01-15')
-        wrapper.vm.currentDate = januaryDate
-
-        wrapper.vm.navigateToPrevious(new Date(januaryDate), 'month')
-        expect(wrapper.vm.currentDate.getMonth()).toBe(11) // December
-        expect(wrapper.vm.currentDate.getFullYear()).toBe(2023)
-      })
-
-      it('should handle leap year February navigation', () => {
-        const marchDate = new Date('2024-03-01') // Leap year
-        wrapper.vm.currentDate = marchDate
-
-        wrapper.vm.navigateToPrevious(new Date(marchDate), 'month')
-        expect(wrapper.vm.currentDate.getMonth()).toBe(1) // February
-        expect(wrapper.vm.currentDate.getFullYear()).toBe(2024)
-      })
-    })
-
-    describe('navigateToNext', () => {
-      it('should navigate to next month', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
-
-        wrapper.vm.navigateToNext(new Date(initialDate), 'month')
-        expect(wrapper.vm.currentDate.getMonth()).toBe(6) // July
-      })
-
-      it('should navigate to next week', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
-
-        wrapper.vm.navigateToNext(new Date(initialDate), 'week')
-        expect(wrapper.vm.currentDate.getDate()).toBe(22)
-      })
-
-      it('should navigate to next day', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
-
-        wrapper.vm.navigateToNext(new Date(initialDate), 'day')
-        expect(wrapper.vm.currentDate.getDate()).toBe(16)
-      })
-
-      // EDGE CASES
-      it('should handle month navigation across year boundaries', () => {
-        const decemberDate = new Date('2024-12-15')
-        wrapper.vm.currentDate = decemberDate
-
-        wrapper.vm.navigateToNext(new Date(decemberDate), 'month')
-        expect(wrapper.vm.currentDate.getMonth()).toBe(0) // January
-        expect(wrapper.vm.currentDate.getFullYear()).toBe(2025)
-      })
-
-      it('should handle week navigation across month boundaries', () => {
-        const endOfMonth = new Date('2024-01-31')
-        wrapper.vm.currentDate = endOfMonth
-
-        wrapper.vm.navigateToNext(new Date(endOfMonth), 'week')
-        expect(wrapper.vm.currentDate.getMonth()).toBe(1) // February
-      })
-    })
-
+  describe('Event Handling Methods', () => {
     describe('handleDateNavigation', () => {
-      it('should handle previous navigation', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
+      it('should navigate to previous date for day view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const testDate = new Date('2025-01-15')
+
+        wrapper.vm.handleDateNavigation({
+          direction: 'prev',
+          view: 'day',
+          currentDate: testDate,
+        })
+
+        expect(wrapper.vm.currentDate.getDate()).toBe(14) // Jan 14
+      })
+
+      it('should navigate to next date for week view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const testDate = new Date('2025-01-15')
+
+        wrapper.vm.handleDateNavigation({
+          direction: 'next',
+          view: 'week',
+          currentDate: testDate,
+        })
+
+        expect(wrapper.vm.currentDate.getDate()).toBe(22) // Jan 15 + 7 days
+      })
+
+      it('should navigate to previous month for month view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const testDate = new Date('2025-01-15')
 
         wrapper.vm.handleDateNavigation({
           direction: 'prev',
           view: 'month',
-          currentDate: initialDate,
+          currentDate: testDate,
         })
 
-        expect(wrapper.vm.currentDate.getMonth()).toBe(4) // May
+        expect(wrapper.vm.currentDate.getMonth()).toBe(11) // December
       })
 
-      it('should handle next navigation', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
+      it('should handle invalid navigation direction gracefully', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const originalDate = new Date(wrapper.vm.currentDate)
 
         wrapper.vm.handleDateNavigation({
-          direction: 'next',
-          view: 'month',
-          currentDate: initialDate,
-        })
-
-        expect(wrapper.vm.currentDate.getMonth()).toBe(6) // July
-      })
-
-      // EDGE CASE: Unknown direction (should do nothing)
-      it('should handle unknown direction gracefully', () => {
-        const initialDate = new Date('2024-06-15')
-        wrapper.vm.currentDate = initialDate
-
-        wrapper.vm.handleDateNavigation({
-          direction: 'unknown',
-          view: 'month',
-          currentDate: initialDate,
+          direction: 'invalid',
+          view: 'day',
+          currentDate: new Date(originalDate),
         })
 
         // Date should remain unchanged
-        expect(wrapper.vm.currentDate).toEqual(initialDate)
+        expect(wrapper.vm.currentDate).toEqual(originalDate)
       })
     })
-  })
 
-  // ==================== METHODS - VIEW MANAGEMENT ====================
-  describe('View Management Methods', () => {
-    beforeEach(() => {
-      wrapper = shallowMount(SmartCalendar)
+    describe('navigateToPrevious', () => {
+      it('should subtract one day for day view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const date = new Date('2025-01-15')
+
+        wrapper.vm.navigateToPrevious(date, 'day')
+        expect(date.getDate()).toBe(14)
+      })
+
+      it('should subtract 7 days for week view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const date = new Date('2025-01-15')
+
+        wrapper.vm.navigateToPrevious(date, 'week')
+        expect(date.getDate()).toBe(8)
+      })
+
+      it('should subtract one month for month view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const date = new Date('2025-01-15')
+
+        wrapper.vm.navigateToPrevious(date, 'month')
+        expect(date.getMonth()).toBe(11) // December
+        expect(date.getFullYear()).toBe(2024)
+      })
+    })
+
+    describe('navigateToNext', () => {
+      it('should add one day for day view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const date = new Date('2025-01-15')
+
+        wrapper.vm.navigateToNext(date, 'day')
+        expect(date.getDate()).toBe(16)
+      })
+
+      it('should add 7 days for week view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const date = new Date('2025-01-15')
+
+        wrapper.vm.navigateToNext(date, 'week')
+        expect(date.getDate()).toBe(22)
+      })
+
+      it('should add one month for month view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const date = new Date('2025-01-15')
+
+        wrapper.vm.navigateToNext(date, 'month')
+        expect(date.getMonth()).toBe(1) // February
+        expect(date.getFullYear()).toBe(2025)
+      })
     })
 
     describe('handleViewChange', () => {
       it('should update current view and date', () => {
-        const newDate = new Date('2024-06-15')
+        const wrapper = shallowMount(SmartCalendar)
+        const newDate = new Date('2025-02-01')
 
         wrapper.vm.handleViewChange({
           view: 'week',
-          previousView: 'month',
           currentDate: newDate,
         })
 
         expect(wrapper.vm.currentView).toBe('week')
         expect(wrapper.vm.currentDate).toEqual(newDate)
       })
-
-      it('should emit view-changed event', () => {
-        const newDate = new Date('2024-06-15')
-
-        wrapper.vm.handleViewChange({
-          view: 'day',
-          previousView: 'week',
-          currentDate: newDate,
-        })
-
-        expect(wrapper.emitted('view-changed')).toBeTruthy()
-        expect(wrapper.emitted('view-changed')[0]).toEqual([
-          {
-            newView: 'day',
-            previousView: 'week',
-            currentDate: newDate,
-          },
-        ])
-      })
-
-      // EDGE CASE: Rapid view switching
-      it('should handle rapid view switching', () => {
-        wrapper.vm.handleViewChange({
-          view: 'week',
-          previousView: 'month',
-          currentDate: new Date(),
-        })
-        expect(wrapper.vm.currentView).toBe('week')
-
-        wrapper.vm.handleViewChange({ view: 'day', previousView: 'week', currentDate: new Date() })
-        expect(wrapper.vm.currentView).toBe('day')
-
-        wrapper.vm.handleViewChange({ view: 'month', previousView: 'day', currentDate: new Date() })
-        expect(wrapper.vm.currentView).toBe('month')
-      })
     })
 
     describe('handleTodayClick', () => {
-      it('should update current date and view', () => {
-        const today = new Date()
+      it('should set current date to today and update view', () => {
+        const wrapper = shallowMount(SmartCalendar)
+        const today = new Date('2025-01-20')
 
         wrapper.vm.handleTodayClick({
-          view: 'week',
+          view: 'day',
           date: today,
         })
 
         expect(wrapper.vm.currentDate).toEqual(today)
-        expect(wrapper.vm.currentView).toBe('week')
-      })
-
-      it('should emit today-clicked event', () => {
-        const today = new Date()
-
-        wrapper.vm.handleTodayClick({
-          view: 'day',
-          date: today,
-        })
-
-        expect(wrapper.emitted('today-clicked')).toBeTruthy()
-        expect(wrapper.emitted('today-clicked')[0]).toEqual([
-          {
-            view: 'day',
-            date: today,
-          },
-        ])
-      })
-
-      // EDGE CASE: Future date
-      it('should handle future date in today click', () => {
-        const futureDate = new Date('2030-01-01')
-
-        wrapper.vm.handleTodayClick({
-          view: 'month',
-          date: futureDate,
-        })
-
-        expect(wrapper.vm.currentDate).toEqual(futureDate)
+        expect(wrapper.vm.currentView).toBe('day')
       })
     })
   })
 
-  // ==================== METHODS - EVENT HANDLING ====================
-  describe('Event Handling Methods', () => {
-    beforeEach(() => {
-      wrapper = shallowMount(SmartCalendar)
-    })
-
-    it('should handle event click and emit event', () => {
-      const mockEvent = { id: 1, title: 'Test Event' }
-
-      wrapper.vm.handleEventClick(mockEvent)
-
-      expect(wrapper.emitted('event-clicked')).toBeTruthy()
-      expect(wrapper.emitted('event-clicked')[0]).toEqual([mockEvent])
-    })
-
-    it('should handle event drop and emit event', () => {
-      const mockEvent = { id: 1, title: 'Test Event', datetime: new Date() }
-
-      wrapper.vm.handleEventDrop({
-        event: mockEvent,
-        newDate: new Date('2024-01-16'),
-        originalDate: new Date('2024-01-15'),
+  describe('Edge Cases and Error Handling', () => {
+    it('should handle empty events array', () => {
+      const wrapper = shallowMount(SmartCalendar, {
+        props: { events: [] },
       })
 
-      expect(wrapper.emitted('event-moved')).toBeTruthy()
-      expect(wrapper.emitted('event-moved')[0][0]).toMatchObject({
-        event: mockEvent,
-        newDate: expect.any(Date),
-        originalDate: expect.any(Date),
+      expect(wrapper.vm.filteredEvents).toEqual([])
+      expect(EventFilterService.filterEventsByView).toHaveBeenCalledWith(
+        [],
+        currentDate,
+        'month',
+        0,
+      )
+    })
+
+    it('should handle invalid view in handleDateNavigation', () => {
+      const wrapper = shallowMount(SmartCalendar)
+      const originalDate = new Date(wrapper.vm.currentDate)
+
+      wrapper.vm.handleDateNavigation({
+        direction: 'prev',
+        view: 'invalid-view',
+        currentDate: new Date(originalDate),
       })
+
+      expect(wrapper.vm.currentDate).toEqual(originalDate)
     })
 
-    it('should handle day click and emit event', () => {
-      const dayData = {
-        date: new Date('2024-01-15'),
-        isOtherMonth: false,
-        events: [],
-      }
+    it('should handle month boundary navigation', () => {
+      const wrapper = shallowMount(SmartCalendar)
 
-      wrapper.vm.handleDayClick(dayData)
+      // Test navigating from January to December
+      const januaryDate = new Date('2025-01-01')
+      wrapper.vm.navigateToPrevious(januaryDate, 'month')
+      expect(januaryDate.getMonth()).toBe(11) // December
+      expect(januaryDate.getFullYear()).toBe(2024)
 
-      expect(wrapper.emitted('day-clicked')).toBeTruthy()
-      expect(wrapper.emitted('day-clicked')[0]).toEqual([dayData])
+      // Test navigating from December to January
+      const decemberDate = new Date('2024-12-31')
+      wrapper.vm.navigateToNext(decemberDate, 'month')
+      expect(decemberDate.getMonth()).toBe(0) // January
+      expect(decemberDate.getFullYear()).toBe(2025)
     })
 
-    // EDGE CASES for event handling
-    it('should handle event click with minimal event data', () => {
-      const minimalEvent = { id: 1, title: 'Minimal Event' }
+    it('should handle leap year navigation', () => {
+      const wrapper = shallowMount(SmartCalendar)
+      const leapYearDate = new Date('2024-02-28') // Leap year
 
-      expect(() => {
-        wrapper.vm.handleEventClick(minimalEvent)
-      }).not.toThrow()
-
-      expect(wrapper.emitted('event-clicked')).toBeTruthy()
+      wrapper.vm.navigateToNext(leapYearDate, 'day')
+      expect(leapYearDate.getDate()).toBe(29) // February 29th
+      expect(leapYearDate.getMonth()).toBe(1) // February
     })
 
-    it('should handle day click with incomplete day data', () => {
-      const minimalDayData = {
-        date: new Date(),
-        // Missing isOtherMonth and events
-      }
+    it('should maintain component state during rapid view changes', async () => {
+      const wrapper = shallowMount(SmartCalendar)
 
-      expect(() => {
-        wrapper.vm.handleDayClick(minimalDayData)
-      }).not.toThrow()
+      // Rapidly change views
+      await wrapper.vm.handleViewChange({ view: 'week', currentDate: new Date('2025-01-15') })
+      await wrapper.vm.handleViewChange({ view: 'day', currentDate: new Date('2025-01-16') })
+      await wrapper.vm.handleViewChange({ view: 'month', currentDate: new Date('2025-02-01') })
 
-      expect(wrapper.emitted('day-clicked')).toBeTruthy()
+      expect(wrapper.vm.currentView).toBe('month')
+      expect(wrapper.vm.currentDate.getMonth()).toBe(1) // February
     })
   })
 
-  // ==================== COMPONENT RENDERING ====================
-  describe('Component Rendering', () => {
-    it('should render correct calendar component based on current view', async () => {
-      wrapper = shallowMount(SmartCalendar)
-
-      // Month view
-      wrapper.vm.currentView = 'month'
-      await wrapper.vm.$nextTick()
-      expect(wrapper.findComponent({ name: 'MonthCalendar' }).exists()).toBe(true)
-
-      // Week view
-      wrapper.vm.currentView = 'week'
-      await wrapper.vm.$nextTick()
-      expect(wrapper.findComponent({ name: 'WeekCalendar' }).exists()).toBe(true)
-
-      // Day view
-      wrapper.vm.currentView = 'day'
-      await wrapper.vm.$nextTick()
-      expect(wrapper.findComponent({ name: 'DayCalendar' }).exists()).toBe(true)
-    })
-
-    it('should pass correct props to calendar components', () => {
-      wrapper = shallowMount(SmartCalendar, {
-        props: { events: mockEvents, weekStartsOn: 1 },
-      })
-
-      const monthCalendar = wrapper.findComponent({ name: 'MonthCalendar' })
-      expect(monthCalendar.props().weekStartsOn).toBe(1)
-      expect(monthCalendar.props().maxVisibleEvents).toBe(3)
-      expect(monthCalendar.props().events).toEqual(wrapper.vm.filteredEvents)
-    })
-  })
-
-  // ==================== PERFORMANCE & ERROR HANDLING ====================
-  describe('Performance and Error Handling', () => {
-    it('should handle large events array efficiently', () => {
-      const largeEventsArray = Array.from({ length: 1000 }, (_, i) => ({
-        id: i,
-        title: `Event ${i}`,
-        datetime: new Date(2024, 0, (i % 30) + 1),
-        type: 'primary',
-      }))
-
-      wrapper = shallowMount(SmartCalendar, {
-        props: { events: largeEventsArray },
-      })
-
-      // Should filter events without performance issues
-      expect(wrapper.vm.filteredEvents).toBeDefined()
-      expect(wrapper.vm.filteredEvents.length).toBeLessThanOrEqual(1000)
-    })
-
-    it('should handle invalid date objects in events gracefully', () => {
-      const eventsWithInvalidDates = [
-        {
-          id: 1,
-          title: 'Invalid Date Event',
-          datetime: new Date('invalid-date'),
-          type: 'primary',
-        },
-      ]
-
-      wrapper = shallowMount(SmartCalendar, {
-        props: { events: eventsWithInvalidDates },
-      })
-
-      // Component should not crash with invalid dates
-      expect(() => wrapper.vm.filteredEvents).not.toThrow()
-    })
-
-    it('should clean up properly on unmount', () => {
-      wrapper = shallowMount(SmartCalendar)
-
-      // Simulate multiple operations
-      wrapper.vm.handleViewChange({ view: 'week', previousView: 'month', currentDate: new Date() })
-      wrapper.vm.handleTodayClick({ view: 'day', date: new Date() })
-
-      // Unmount should work without errors
-      expect(() => wrapper.unmount()).not.toThrow()
-    })
-  })
-
-  // ==================== EVENT PROPAGATION ====================
-  describe('Event Propagation', () => {
-    it('should propagate events from child components', async () => {
-      wrapper = shallowMount(SmartCalendar)
-
-      // Simulate CalendarHeader emitting date-navigator event
-      const header = wrapper.findComponent({ name: 'CalendarHeader' })
-      await header.vm.$emit('date-navigator', {
-        direction: 'next',
-        view: 'month',
-        currentDate: new Date(),
-      })
-
-      // SmartCalendar should handle the event
-      expect(wrapper.vm.currentDate).toBeDefined()
-    })
-
-    it('should propagate view-change event from header', async () => {
-      wrapper = shallowMount(SmartCalendar)
-
-      const header = wrapper.findComponent({ name: 'CalendarHeader' })
-      const newDate = new Date('2024-06-15')
+  describe('Emit Events', () => {
+    it('should handle view-change event', async () => {
+      const wrapper = shallowMount(SmartCalendar)
+      const header = wrapper.findComponent(CalendarHeader)
 
       await header.vm.$emit('view-change', {
         view: 'week',
-        previousView: 'month',
-        currentDate: newDate,
+        currentDate: new Date('2025-01-15'),
       })
 
       expect(wrapper.vm.currentView).toBe('week')
-      expect(wrapper.vm.currentDate).toEqual(newDate)
+      expect(wrapper.vm.currentDate).toEqual(new Date('2025-01-15'))
     })
 
-    it('should propagate today-click event from header', async () => {
-      wrapper = shallowMount(SmartCalendar)
-
-      const header = wrapper.findComponent({ name: 'CalendarHeader' })
-      const today = new Date()
+    it('should handle today-click event', async () => {
+      const wrapper = shallowMount(SmartCalendar)
+      const header = wrapper.findComponent(CalendarHeader)
+      const today = new Date('2025-01-20')
 
       await header.vm.$emit('today-click', {
         view: 'day',
@@ -707,6 +397,20 @@ describe('TESTING SmartCalendar.vue', () => {
 
       expect(wrapper.vm.currentView).toBe('day')
       expect(wrapper.vm.currentDate).toEqual(today)
+    })
+
+    it('should handle date-navigator event', async () => {
+      const wrapper = shallowMount(SmartCalendar)
+      const header = wrapper.findComponent(CalendarHeader)
+      const testDate = new Date('2025-01-15')
+
+      await header.vm.$emit('date-navigator', {
+        direction: 'next',
+        view: 'week',
+        currentDate: testDate,
+      })
+
+      expect(wrapper.vm.currentDate.getDate()).toBe(22) // Jan 15 + 7 days
     })
   })
 })

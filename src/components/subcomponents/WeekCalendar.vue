@@ -193,7 +193,12 @@ export default {
      * @returns {string} Formatted time string
      */
     formatTime(date) {
-      return format(date, this.hourFormat12 ? 'h:mm a' : 'HH:mm')
+      try {
+        return format(date, this.hourFormat12 ? 'h:mm a' : 'HH:mm')
+      } catch (error) {
+        console.warn('Invalid date provided to formatTime:', error)
+        return 'Invalid time'
+      }
     },
 
     /**
